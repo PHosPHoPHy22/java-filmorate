@@ -64,6 +64,7 @@ public class UserController {
         }
 
     }
+
     public long getNextId() {
 
         long currentMaxId = users.keySet()
