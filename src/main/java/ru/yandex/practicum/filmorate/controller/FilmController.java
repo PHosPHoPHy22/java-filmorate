@@ -15,7 +15,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/films")
 public class FilmController {
-    Map<Long, Film> films = new HashMap<>();
+    private Map<Long, Film> films = new HashMap<>();
 
 
 
