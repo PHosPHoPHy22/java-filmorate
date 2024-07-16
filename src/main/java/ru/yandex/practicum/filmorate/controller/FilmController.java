@@ -24,7 +24,7 @@ public class FilmController {
         return films.values();
     }
 
-    @PutMapping
+    @PostMapping
     public Film addFilm(@RequestBody Film film) {
         if (film.getId() == null) {
             throw new NotFoundException("Id can not be null");
