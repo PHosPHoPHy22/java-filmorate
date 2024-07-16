@@ -25,9 +25,6 @@ public class UserController {
 
     @PostMapping
     public User addUser(@RequestBody User user) {
-        if (user.getId() == null) {
-            throw new NotFoundException("Id can not be null");
-        }
         validationCheck(user);
         user.setId(getNextId());
         users.put(user.getId(), user);
@@ -37,6 +34,9 @@ public class UserController {
 
     @PutMapping
     public User update(@RequestBody User user) {
+        if (user.getId() == null) {
+            throw new NotFoundException("Id can not be null");
+        }
         validationCheck(user);
         User newUser = users.get(user.getId());
         newUser.setBirthday(user.getBirthday());
@@ -60,7 +60,7 @@ public class UserController {
             user.setName(user.getLogin());
         }
         if (user.getBirthday().isAfter(LocalDate.now())) {
-            throw new ValidationException("Дата рождения введена не корректно");
+            throw new ValidationException("The date of birth was entered incorrectly");
         }
 
     }

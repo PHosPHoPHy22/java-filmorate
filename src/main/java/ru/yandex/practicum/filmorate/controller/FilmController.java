@@ -26,9 +26,6 @@ public class FilmController {
 
     @PostMapping
     public Film addFilm(@RequestBody Film film) {
-        if (film.getId() == null) {
-            throw new NotFoundException("Id can not be null");
-        }
         validationCheck(film);
         film.setId(getNextId());
         films.put(film.getId(), film);
@@ -37,6 +34,9 @@ public class FilmController {
 
     @PutMapping
     public Film update(@RequestBody Film film) {
+        if (film.getId() == null) {
+            throw new NotFoundException("Id can not be null");
+        }
         validationCheck(film);
         Film newFilm = films.get(film.getId());
         newFilm.setName(film.getName());
@@ -47,7 +47,7 @@ public class FilmController {
     }
 
     public void validationCheck(Film film) {
-        if (film.getName() == null) {
+        if (film.getName() == null || film.getName().trim().isBlank()) {
             throw new NotFoundException("Film name is null");
         }
         if (film.getDescription().length() > 200) {
