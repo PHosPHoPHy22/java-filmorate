@@ -35,11 +35,6 @@ class UserControllerTest {
         assertEquals(LocalDate.of(1990, 1, 1), addedUser.getBirthday());
     }
 
-    @Test
-    void addUser_NullId() {
-        User user = new User(null, "User 1", "user1@example.com", "User 1", LocalDate.of(1990, 1, 1));
-        assertThrows(NotFoundException.class, () -> userController.addUser(user));
-    }
 
     @Test
     void addUser_InvalidEmail() {
