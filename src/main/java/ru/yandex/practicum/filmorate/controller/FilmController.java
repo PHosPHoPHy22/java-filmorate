@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.time.LocalDate;
 import java.util.Collection;
@@ -15,8 +16,12 @@ import java.util.Map;
 @RestController
 @RequestMapping("/films")
 public class FilmController {
+    private final FilmService filmService;
     private Map<Long, Film> films = new HashMap<>();
 
+    public FilmController(FilmService filmService) {
+        this.filmService = filmService;
+    }
 
 
     @GetMapping
@@ -63,7 +68,6 @@ public class FilmController {
     }
 
     public long getNextId() {
-
         long currentMaxId = films.keySet()
                 .stream()
                 .mapToLong(id -> id)
