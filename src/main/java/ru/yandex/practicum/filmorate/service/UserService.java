@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 @Service
 public class UserService {
+
     private final UserStorage userStorage;
 
     @Autowired
