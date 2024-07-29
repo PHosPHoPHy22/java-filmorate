@@ -12,13 +12,9 @@ import java.util.Set;
 public class User {
 
     private Integer id;
-    @NotBlank
     private String email;
-    @NotBlank
     private String login;
-    @NotBlank
     private String name;
-    @NotNull
     private LocalDate birthday;
     private Set<Integer> friends = new HashSet<>();
 
