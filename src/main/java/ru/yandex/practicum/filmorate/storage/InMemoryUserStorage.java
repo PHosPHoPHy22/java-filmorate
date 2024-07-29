@@ -10,8 +10,11 @@ import java.util.Map;
 
 @Component
 public class InMemoryUserStorage implements UserStorage{
+
     private final Map<Long, User> users = new HashMap<>();
+
     private long nextId = 1;
+
     @Override
     public User getUser(int id) {
         return users.getOrDefault(id, null);
@@ -39,5 +42,4 @@ public class InMemoryUserStorage implements UserStorage{
     public void deleteUser(int id) {
         users.remove(id);
     }
-
 }

@@ -10,8 +10,11 @@ import java.util.Map;
 
 @Component
 public class InMemoryFilmStorage implements FilmStorage{
+
     private final Map<Long, Film> films = new HashMap<>();
+
     private Long nextId = 1L;
+
     @Override
     public Film getFilm(int id) {
         return films.getOrDefault(id, null);
@@ -39,5 +42,4 @@ public class InMemoryFilmStorage implements FilmStorage{
     public void deleteFilm(int id) {
         films.remove(id);
     }
-
 }
