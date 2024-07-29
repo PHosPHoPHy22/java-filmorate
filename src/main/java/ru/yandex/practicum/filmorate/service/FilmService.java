@@ -10,9 +10,9 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
-import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -30,29 +30,13 @@ public class FilmService {
     }
 
     public Film createFilm(@RequestBody Film newFilm) {
-        validateFilm(newFilm);
         return filmStorage.save(newFilm);
     }
 
     public Film updateFilm(@RequestBody Film newFilm) {
-        validateFilm(newFilm);
         return filmStorage.update(newFilm);
     }
 
-    private void validateFilm(Film film) {
-        if (film.getName() == null || film.getName().trim().isBlank()) {
-            throw new ValidationException("Название фильма не может быть пустым");
-        }
-        if (film.getDescription().length() > 200) {
-            throw new ValidationException("Описание фильма не может быть длиннее 200 символов");
-        }
-        if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 25))) {
-            throw new ValidationException("Дата выхода фильма не может быть раньше 25.12.1895");
-        }
-        if (film.getDuration() < 0) {
-            throw new ValidationException("Продолжительность фильма не может быть отрицательной");
-        }
-    }
 
     public void addLike(Integer filmId, Integer userId) {
         if (filmStorage.getById(filmId) == null) {
@@ -92,13 +76,10 @@ public class FilmService {
         filmStorage.getById(filmId).getLikes().remove(userId);
     }
 
-    public List<Film> bestFilms(int count) {
-        List<Film> sortedFilms = filmStorage.getAll().stream()
-                .sorted(Comparator.comparingInt(f -> f.getLikes().size()))
-                .toList();
-
-        return sortedFilms.reversed().stream()
+    public List bestFilms(int count) {
+        return filmStorage.getAll().stream()
+                .sorted((f1, f2) -> f2.getLikes().size() - f1.getLikes().size())
                 .limit(count)
-                .toList();
+                .collect(Collectors.toList());
     }
 }
