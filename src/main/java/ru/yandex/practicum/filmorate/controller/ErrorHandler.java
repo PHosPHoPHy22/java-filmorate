@@ -6,26 +6,30 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
-import ru.yandex.practicum.filmorate.exception.ErrorResponse;
+
+import java.util.Map;
 
 @RestControllerAdvice
 public class ErrorHandler {
 
-    @ExceptionHandler(NotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ErrorResponse handleEntityNotFound(final NotFoundException e) {
-        return new ErrorResponse(e.getMessage());
-    }
-
-    @ExceptionHandler(ValidationException.class)
+    @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse handleValidationException(final ValidationException e) {
-        return new ErrorResponse(e.getMessage());
+    public Map<String, String> handleValidationException(final ValidationException e) {
+        return Map.of("error", "Ошибка валидации",
+                "errorMessage", e.getMessage());
     }
 
-    @ExceptionHandler(Exception.class)
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Map<String, String> handleNotFoundException(final NotFoundException e) {
+        return Map.of("error", "Искомый объект не найден",
+                "errorMessage", e.getMessage());
+    }
+
+    @ExceptionHandler
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ErrorResponse handleException(final Exception e) {
-        return new ErrorResponse("Произошла ошибка на сервере");
+    public Map<String, String> handleThrowable(final Throwable e) {
+        return Map.of("error", "Произошла непредвиденная ошибка",
+                "errorMessage", e.getMessage());
     }
 }
