@@ -1,14 +1,17 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -17,6 +20,11 @@ import java.util.Map;
 public class FilmController {
     private Map<Long, Film> films = new HashMap<>();
 
+    private final FilmService filmService;
+
+    public FilmController(FilmService filmService) {
+        this.filmService = filmService;
+    }
 
 
     @GetMapping
@@ -30,6 +38,36 @@ public class FilmController {
         film.setId(getNextId());
         films.put(film.getId(), film);
         return film;
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Film> getFilmById(@PathVariable int id) {
+        return ResponseEntity.ok(filmService.getFilm(id));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteFilm(@PathVariable int id) {
+        filmService.deleteFilm(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/popular")
+    public ResponseEntity<List<Film>> getPopularFilms(
+            @RequestParam(value = "count", defaultValue = "10") int count
+    ) {
+        return ResponseEntity.ok(filmService.getPopularFilms(count));
+    }
+
+    @PutMapping("/{id}/like/{userId}")
+    public ResponseEntity<Void> likeFilm(@PathVariable int id, @PathVariable int userId) {
+        filmService.likeFilm(id, userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}/like/{userId}")
+    public ResponseEntity<Void> unlikeFilm(@PathVariable int id, @PathVariable int userId) {
+        filmService.unlikeFilm(id, userId);
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping
