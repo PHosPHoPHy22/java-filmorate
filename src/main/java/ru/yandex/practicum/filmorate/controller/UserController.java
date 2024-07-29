@@ -1,74 +1,69 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
 
-import java.util.Collection;
+
 import java.util.List;
 
 @Slf4j
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/users")
 public class UserController {
-
     private final UserService userService;
 
-    @Autowired
-    public UserController(UserService userService) {
-        this.userService = userService;
-    }
-
     @GetMapping
-    public Collection<User> getAllUsers() {
-        return userService.getAllUsers();
+    public List<User> findAll() {
+        log.info("Получение списка пользователей");
+        return userService.findAllUsers();
     }
 
-    @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody User user) {
-        return new ResponseEntity<>(userService.createUser(user), HttpStatus.CREATED);
-    }
-
-    @PutMapping
-    public ResponseEntity<User> updateUser(@RequestBody User user) {
-        return ResponseEntity.ok(userService.updateUser(user));
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable int id) {
-        return ResponseEntity.ok(userService.getUser(id));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable int id) {
-        userService.deleteUser(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PutMapping("/{id}/friends/{friendId}")
-    public ResponseEntity<Void> addFriend(@PathVariable int id, @PathVariable int friendId) {
-        userService.addFriend(id, friendId);
-        return ResponseEntity.noContent().build();
-    }
-
-    @DeleteMapping("/{id}/friends/{friendId}")
-    public ResponseEntity<Void> deleteFriend(@PathVariable int id, @PathVariable int friendId) {
-        userService.deleteFriend(id, friendId);
-        return ResponseEntity.noContent().build();
+    @GetMapping("/{userId}")
+    public User findById(@PathVariable Integer userId) {
+        log.info("Получение пользователя с ID {}", userId);
+        return userService.findById(userId);
     }
 
     @GetMapping("/{id}/friends")
-    public ResponseEntity<List<User>> getFriends(@PathVariable int id) {
-        return ResponseEntity.ok(userService.getFriends(id));
+    public List<User> findFriends(@PathVariable Integer id) {
+        log.info("Получение списка друзей пользователя с ID {}", id);
+        return userService.findFriends(id);
     }
 
-    @GetMapping("/{id}/friends/common/{otherId}")
-    public ResponseEntity<List<User>> getCommonFriends(@PathVariable int id, @PathVariable int otherId) {
-        return ResponseEntity.ok(userService.getCommonFriends(id, otherId));
+    @GetMapping("/{id}/friends/common/{friendId}")
+    public List<User> findMutualFriends(@PathVariable Integer id,
+                                        @PathVariable Integer friendId) {
+        log.info("Получение списка общих друзей пользователей с ID {}, {}", id, friendId);
+        return userService.findMutualFriends(id, friendId);
     }
 
+    @PostMapping
+    public User create(@RequestBody User newUser) {
+        log.info("Создание нового пользователя: {}", newUser.toString());
+        return userService.createUser(newUser);
+    }
+
+    @PutMapping
+    public User update(@RequestBody User newUser) {
+        log.info("Обновление пользователя с ID {}", newUser.getId());
+        return userService.updateUser(newUser);
+    }
+
+    @PutMapping("/{id}/friends/{friendId}")
+    public void addToFriends(@PathVariable Integer id,
+                             @PathVariable Integer friendId) {
+        userService.addToFriends(id, friendId);
+        log.info("Пользователи с ID {} и {} добавлены в друзья", id, friendId);
+    }
+
+    @DeleteMapping("/{id}/friends/{friendId}")
+    public void removeFromFriends(@PathVariable Integer id,
+                                  @PathVariable Integer friendId) {
+        userService.removeFromFriends(id, friendId);
+        log.info("Пользователи с ID {} и {} удалены из друзей", id, friendId);
+    }
 }
