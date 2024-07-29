@@ -1,14 +1,16 @@
 package ru.yandex.practicum.filmorate.storage;
 
+import org.springframework.web.bind.annotation.RequestBody;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.List;
 
 public interface UserStorage {
-    User getUser(int id);
-    List<User> getAllUsers();
-    User saveUser(User user);
-    User updateUser(User user);
-    void deleteUser(int id);
+    List<User> findAll();
 
+    User save(@RequestBody User newUser);
+
+    User getById(int id);
+
+    User update(@RequestBody User newUser);
 }
