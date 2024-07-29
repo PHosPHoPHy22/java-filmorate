@@ -71,4 +71,5 @@ class UserService {
         }
         return commonFriends;
     }
+
 }
