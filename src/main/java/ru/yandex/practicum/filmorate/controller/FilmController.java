@@ -1,64 +1,70 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
+import ru.yandex.practicum.filmorate.validation.ValidFilm;
 
-
+import java.util.Collection;
 import java.util.List;
 
 @Slf4j
-@RequiredArgsConstructor
 @RestController
 @RequestMapping("/films")
+@RequiredArgsConstructor
 public class FilmController {
+
     private final FilmService filmService;
 
     @GetMapping
-    public List<Film> findAll() {
-        log.info("Получение списка фильмов");
-        return filmService.findAllFilms();
+    public Collection<Film> getAll() {
+        return filmService.getAll();
     }
 
-    @GetMapping("/{filmId}")
-    public Film findById(@PathVariable Integer filmId) {
-        log.info("Получение фильма с ID {}", filmId);
-        return filmService.findById(filmId);
+    @GetMapping("/{id}")
+    public Film getById(@PathVariable Long id) {
+        return filmService.getById(id);
     }
 
     @PostMapping
-    public ResponseEntity<Film> addFilm(@Valid @RequestBody Film film) {
-        log.info("Создание нового фильма: {}", film.toString());
-        return new ResponseEntity<>(filmService.createFilm(film), HttpStatus.CREATED);
+    @ResponseStatus(HttpStatus.CREATED) // Добавлен HTTP-код ответа
+    public Film add(@ValidFilm @RequestBody Film film) {
+        return filmService.add(film);
     }
 
     @PutMapping
-    public Film update(@RequestBody Film newFilm) {
-        log.info("Обновление фильма с ID {}", newFilm.getId());
-        return filmService.updateFilm(newFilm);
+    @ResponseStatus(HttpStatus.OK)
+    public Film update(@ValidFilm @RequestBody Film newFilm) {
+        return filmService.update(newFilm);
     }
 
-    @PutMapping("/{id}/like/{userId}")
-    public void addLike(@PathVariable Integer id,
-                        @PathVariable Integer userId) {
-        log.info("Фильму с ID {} поставлен лайк пользователем с ID {}", id, userId);
+    @PutMapping("/{id}/like/{userId}") // Исправлен URL
+    @ResponseStatus(HttpStatus.OK)
+    public void addLike(@PathVariable Long id, @PathVariable Long userId) {
         filmService.addLike(id, userId);
     }
 
-    @DeleteMapping("/{id}/like/{userId}")
-    public void removeLike(@PathVariable Integer id,
-                           @PathVariable Integer userId) {
-        log.info("С фильма с ID {} снят лайк пользователя с ID {}", id, userId);
+    @DeleteMapping("/{id}/like/{userId}") // Исправлен URL
+    @ResponseStatus(HttpStatus.OK)
+    public void removeLike(@PathVariable Long id, @PathVariable Long userId) {
         filmService.removeLike(id, userId);
     }
 
     @GetMapping("/popular")
-    public List<Film> bestFilms(@RequestParam(defaultValue = "10") int count) {
-        return filmService.bestFilms(count);
+    @ResponseStatus(HttpStatus.OK)
+    public List<Film> getPopular(@RequestParam(value = "count", defaultValue = "10",
+            required = false) int count) {
+        return filmService.getPopular(count);
+    }
+
+    // Обработка исключений (пример)
+    @ExceptionHandler(NotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public void handleNotFoundException(NotFoundException ex) {
+        log.warn(ex.getMessage(), ex);
     }
 }

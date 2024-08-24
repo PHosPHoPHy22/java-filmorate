@@ -1,65 +1,100 @@
 package ru.yandex.practicum.filmorate.storage;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class InMemoryUserStorage implements UserStorage {
-    private final Map<Integer, User> users = new HashMap<>();
+    private final Map<Long, User> users = new HashMap<>();
+    private Long userId = 1L;
 
     @Override
-    public List<User> findAll() {
-        return new ArrayList<>(users.values());
+    public Collection<User> getAll() {
+        return users.values();
     }
 
     @Override
-    public User save(User newUser) {
-        newUser.setId(getNextId());
-        users.put(newUser.getId(), newUser);
-        return newUser;
+    public User add(User user) {
+        checkUserLogin(users, user);
+        user.setId(userId);
+        users.put(userId, user);
+        userId++;
+        log.debug("User with id = {} successfully added", user.getId());
+        return user;
     }
 
     @Override
-    public User getById(int id) {
-        User user = users.get(id);
-        if (user == null) {
-            String message = "Пользователь с id = " + id + " не найден";
-            log.error(message);
-            throw new NotFoundException(message);
+    public User update(User user) {
+        if (users.containsKey(user.getId())) {
+            if (!users.get(user.getId()).getLogin().equals(user.getLogin())) {
+                checkUserLogin(users, user);
+            }
+            users.put(user.getId(), user);
+            log.debug("User with id = {} successfully updated", user.getId());
+        } else {
+            log.warn("User with id = {} not updated, as they are not registered", user.getId());
+            throw new NotFoundException("Cannot update user data. User does not exist");
         }
         return user;
     }
 
-    public User update(User newUser) {
-        User oldUser = users.get(newUser.getId());
-        if (oldUser == null) {
-            String message = "Пользователь с id = " + newUser.getId() + " не найден";
-            log.error(message);
-            throw new NotFoundException(message);
+    public void checkUserLogin(Map<Long, User> users, User user) {
+        boolean loginExists = users.values().stream()
+                .anyMatch(existingUser -> user.getLogin().equals(existingUser.getLogin()));
+
+        if (loginExists) {
+            throw new ValidationException("User with this login is already registered");
         }
-        oldUser.setName(newUser.getName());
-        oldUser.setEmail(newUser.getEmail());
-        oldUser.setLogin(newUser.getLogin());
-        oldUser.setBirthday(newUser.getBirthday());
-        return oldUser;
     }
 
-    private Integer getNextId() {
-        int currentMaxId = users.keySet()
-                .stream()
-                .mapToInt(id -> id)
-                .max()
-                .orElse(0);
-        return ++currentMaxId;
+    @Override
+    public void addFriend(Long userId, Long friendId) {
+        getUserById(userId).getFriends().add(friendId);
+        getUserById(friendId).getFriends().add(userId);
+    }
+
+    @Override
+    public void deleteFriend(Long userId, Long friendId) {
+        getUserById(userId).getFriends().remove(friendId);
+        getUserById(friendId).getFriends().remove(userId);
+    }
+
+
+    @Override
+    public List<User> getCommonFriends(Long userId, Long friendId) {
+        List<User> commonFriends = new ArrayList<>();
+        for (Long id : getUserById(userId).getFriends()) {
+            if (getUserById(friendId).getFriends().contains(id)) {
+                commonFriends.add(getUserById(id));
+            }
+        }
+        return commonFriends;
+    }
+
+    @Override
+    public List<User> getFriendsByUserId(Long id) {
+        User user = getUserById(id);
+        if (user == null) {
+            throw new NotFoundException("User with id = " + id + " not found");
+        }
+        return getAll().stream()
+                .filter(u -> user.getFriends().contains(u.getId()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public User getUserById(Long userId) {
+        return users.get(userId);
     }
 }
