@@ -1,59 +1,77 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.service.UserService;
 
+import java.time.LocalDate;
 import java.util.Collection;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/users")
 public class UserController {
 
-    private final UserService userService;
+    private Map<Long, User> users = new HashMap<>();
 
     @GetMapping
-    public Collection<User> findAll() {
-        return userService.findAll();
+    public Collection<User> getAllFilms() {
+        return users.values();
     }
 
     @PostMapping
-    public User create(@Valid @RequestBody User user) {
-        return userService.create(user);
+    public User addUser(@RequestBody User user) {
+        validationCheck(user);
+        user.setId(getNextId());
+        users.put(user.getId(), user);
+        log.info("Добавили пользователя");
+        return user;
     }
 
     @PutMapping
-    public User update(@Valid @RequestBody User newUser) {
-        return userService.update(newUser);
+    public User update(@RequestBody User user) {
+        if (user.getId() == null) {
+            throw new NotFoundException("Id can not be null");
+        }
+        validationCheck(user);
+        User newUser = users.get(user.getId());
+        newUser.setBirthday(user.getBirthday());
+        newUser.setLogin(user.getLogin());
+        newUser.setEmail(user.getEmail());
+        newUser.setName(user.getName());
+        return newUser;
     }
 
+    public void validationCheck(User user) {
+        if (user.getEmail() == null || user.getEmail().isEmpty()) {
+            throw new ValidationException("The mail should not be empty");
+        }
+        if (!(user.getEmail().contains("@"))) {
+            throw new ValidationException("The mail must contain the symbol @");
+        }
+        if (user.getLogin() == null || user.getLogin().trim().isEmpty()) {
+            throw new ValidationException("The login cannot be empty and contain spaces");
+        }
+        if (user.getName() == null) {
+            user.setName(user.getLogin());
+        }
+        if (user.getBirthday().isAfter(LocalDate.now())) {
+            throw new ValidationException("The date of birth was entered incorrectly");
+        }
 
-    @PutMapping("/{id}/friends/{friendId}")
-    public User addUser(@PathVariable long id, @PathVariable long friendId) {
-        return userService.addFriend(id, friendId);
     }
 
+    public long getNextId() {
 
-    @DeleteMapping("/{id}/friends/{friendId}")
-    public User deleteUser(@PathVariable long id, @PathVariable long friendId) {
-        return userService.deleteUser(id, friendId);
+        long currentMaxId = users.keySet()
+                .stream()
+                .mapToLong(id -> id)
+                .max()
+                .orElse(0);
+        return ++currentMaxId;
     }
-
-    @GetMapping("/{id}/friends")
-    public List<User> allFriends(@PathVariable long id) {
-        return userService.allFriends(id);
-    }
-
-    @GetMapping("/{id}/friends/common/{otherId}")
-    public List<User> commonFriends(@PathVariable long id, @PathVariable long otherId) {
-        return userService.commonFriends(id, otherId);
-    }
-
-
 }

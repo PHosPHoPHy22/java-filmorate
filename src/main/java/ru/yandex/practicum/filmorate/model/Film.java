@@ -1,25 +1,18 @@
 package ru.yandex.practicum.filmorate.model;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.Size;
 import lombok.Data;
-import org.springframework.lang.Nullable;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 public class Film {
     private Long id;
-    private LocalDate releaseDate;
-    private Mpa mpa;
-    @Nullable
-    private List<Genre> genres;
-    @NotBlank
     private String name;
-    @Size(max = 200)
     private String description;
-    @Positive
-    private Integer duration;
+    private LocalDate releaseDate;
+    private int duration;
+    private Set<Integer> likes = new HashSet<>();
+
 }
