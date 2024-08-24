@@ -1,7 +1,5 @@
 package ru.yandex.practicum.filmorate.exception;
 
-public class ErrorResponse extends RuntimeException {
-    public ErrorResponse(String message) {
-        super(message);
-    }
+
+record ErrorResponse(String error, String description) {
 }

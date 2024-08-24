@@ -1,85 +1,110 @@
 package ru.yandex.practicum.filmorate.service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestBody;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
-import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.UserStorage;
 
-import java.time.LocalDate;
+import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.UserDbStorage;
+import ru.yandex.practicum.filmorate.storage.mappers.UserRowMapper;
+
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
-    private final UserStorage userStorage;
+    private final UserDbStorage userRepository;
+    private final JdbcTemplate jdbc;
+    private final UserRowMapper mapper;
 
-    public List<User> findAllUsers() {
-        return userStorage.findAll();
-    }
+    public User addFriend(long id, long friendId) {
 
-    public User findById(Integer userId) {
-
-        return userStorage.getById(userId);
-    }
-
-    public User createUser(@RequestBody User newUser) {
-        validateUser(newUser);
-        return userStorage.save(newUser);
-    }
-
-    public User updateUser(@RequestBody User newUser) {
-        validateUser(newUser);
-        return userStorage.update(newUser);
-    }
-
-
-    public void addToFriends(Integer firstId, Integer secondId) {
-        if (userStorage.getById(firstId).getFriends().contains(secondId)) {
-            String message = "Пользователи уже дружат";
-            log.error(message);
-            throw new ValidationException(message);
+        if (userRepository.findById(id) == null) {
+            throw new NotFoundException("Нет пользователя с id: " + id);
         }
-        userStorage.getById(firstId).getFriends().add(secondId);
-        userStorage.getById(secondId).getFriends().add(firstId);
+        if (userRepository.findById(friendId) == null) {
+            throw new NotFoundException("Нет пользователя с id: " + friendId);
+        }
+        jdbc.update("INSERT INTO friendship_request(from_user_id, to_user_id, status) " +
+                "VALUES(?, ?, ?)", id, friendId, 1);
+        jdbc.update("INSERT INTO friendship_request(from_user_id, to_user_id, status) " +
+                "VALUES(?, ?, ?)", friendId, id, 0);
+
+
+        return userRepository.findById(id);
     }
 
-    public void removeFromFriends(Integer firstId, Integer secondId) {
-        userStorage.getById(firstId).getFriends().remove(secondId);
-        userStorage.getById(secondId).getFriends().remove(firstId);
+    public User deleteUser(long id, long friendId) {
+        if (userRepository.findById(id) == null) {
+            throw new NotFoundException("Нет пользователя с id: " + id);
+        }
+        if (userRepository.findById(friendId) == null) {
+            throw new NotFoundException("Нет пользователя с id: " + friendId);
+        }
+        jdbc.update("DELETE FROM friendship_request WHERE from_user_id = ? AND to_user_id = ? AND " +
+                "status = ?", id, friendId, 1);
+        jdbc.update("DELETE FROM friendship_request WHERE from_user_id = ? AND to_user_id = ? AND " +
+                "status = ?", friendId, id, 0);
+
+
+        return userRepository.findById(id);
     }
 
-    public List<User> findFriends(Integer id) {
-        return userStorage.getById(id).getFriends().stream()
-                .map(userStorage::getById)
-                .toList();
+
+    public List<User> commonFriends(long id, long otherId) {
+        if (userRepository.findById(id) == null) {
+            throw new NotFoundException("Нет пользователя с id: " + id);
+        }
+        if (userRepository.findById(otherId) == null) {
+            throw new NotFoundException("Нет пользователя с id: " + otherId);
+        }
+
+        String sql = "SELECT to_user_id FROM friendship_request WHERE from_user_id = ?" +
+                " INTERSECT " +
+                "SELECT to_user_id FROM friendship_request WHERE from_user_id = ?";
+
+        List<Long> commonFriendIds = jdbc.queryForList(sql, Long.class, id, otherId);
+
+        // Получить список пользователей по их ID
+        List<User> commonFriends = new ArrayList<>();
+        for (Long friendId : commonFriendIds) {
+            User user = userRepository.findById(friendId);
+            if (user != null) {
+                commonFriends.add(user);
+            }
+        }
+
+        return commonFriends;
     }
 
-    private void validateUser(User user) {
-        if (user.getEmail() == null || user.getEmail().isBlank()) {
-            throw new ValidationException("Email не может быть пустым");
+    public List<User> allFriends(long userId) {
+        if (userRepository.findById(userId) == null) {
+            throw new NotFoundException("Нет пользователя с id: " + userId);
         }
-        if (user.getLogin() == null || user.getLogin().trim().isBlank()) {
-            throw new ValidationException("Логин не может быть пустым");
-        }
-        if (user.getName() == null || user.getName().trim().isBlank()) {
-            throw new ValidationException("Имя не может быть пустым");
-        }
-        if (user.getBirthday() == null) {
-            throw new ValidationException("Дата рождения не может быть пустой");
-        }
-        if (user.getBirthday().isAfter(LocalDate.now())) {
-            throw new ValidationException("Дата рождения не может быть в будущем");
-        }
+        String sql = "SELECT U.* FROM friendship_request AS F JOIN USERS AS U ON F.to_user_id = U.id WHERE F.from_user_id = ? AND F.status = true";
+        List<User> usersList = jdbc.query(sql, mapper, userId);
+
+        return usersList;
     }
 
-    public List<User> findMutualFriends(Integer firstId, Integer secondId) {
-        return userStorage.getById(firstId).getFriends().stream()
-                .filter(id -> userStorage.getById(secondId).getFriends().contains(id))
-                .map(userStorage::getById)
-                .toList();
+    public Collection<User> findAll() {
+        return userRepository.findAll();
     }
+
+    public void delete(long id) {
+        userRepository.delete(id);
+    }
+
+    public User update(User newUser) {
+        return userRepository.update(newUser);
+    }
+
+    public User create(User user) {
+        return userRepository.create(user);
+    }
+
+
 }
