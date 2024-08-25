@@ -4,9 +4,9 @@ import ru.yandex.practicum.filmorate.model.Mpa;
 
 import java.util.List;
 
-public interface MpaStorage {
+interface MpaStorage {
 
-    public List<Mpa> findAll();
+    List<Mpa> findAll();
 
-    public Mpa findById(long id);
+    Mpa findById(long id);
 }

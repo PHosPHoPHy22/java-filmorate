@@ -9,7 +9,6 @@ import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.UserDbStorage;
 import ru.yandex.practicum.filmorate.storage.mappers.UserRowMapper;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -62,20 +61,15 @@ public class UserService {
             throw new NotFoundException("Нет пользователя с id: " + otherId);
         }
 
-        String sql = "SELECT to_user_id FROM friendship_request WHERE from_user_id = ?" +
-                " INTERSECT " +
-                "SELECT to_user_id FROM friendship_request WHERE from_user_id = ?";
+        // Объединяем запрос для получения общих друзей в один
+        String sql = "SELECT U.* FROM friendship_request AS F JOIN USERS AS U ON F.to_user_id = U.id " +
+                "WHERE F.from_user_id = ? AND F.status = true " +
+                "INTERSECT " +
+                "SELECT U.* FROM friendship_request AS F JOIN USERS AS U ON F.to_user_id = U.id " +
+                "WHERE F.from_user_id = ? AND F.status = true";
 
-        List<Long> commonFriendIds = jdbc.queryForList(sql, Long.class, id, otherId);
-
-        // Получить список пользователей по их ID
-        List<User> commonFriends = new ArrayList<>();
-        for (Long friendId : commonFriendIds) {
-            User user = userRepository.findById(friendId);
-            if (user != null) {
-                commonFriends.add(user);
-            }
-        }
+        // Получаем список общих друзей в одном запросе
+        List<User> commonFriends = jdbc.query(sql, mapper, id, otherId);
 
         return commonFriends;
     }
