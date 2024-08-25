@@ -9,7 +9,6 @@ import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.UserDbStorage;
 import ru.yandex.practicum.filmorate.storage.mappers.UserRowMapper;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
