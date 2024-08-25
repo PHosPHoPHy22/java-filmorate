@@ -7,6 +7,7 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.FilmDbStorage;
 import ru.yandex.practicum.filmorate.storage.UserDbStorage;
+import ru.yandex.practicum.filmorate.storage.mappers.FilmRowMapper;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -64,12 +65,10 @@ public class FilmService {
     }
 
     public List<Film> getPopular(int count) {
-        String sql = "SELECT film_id FROM films_likes GROUP BY film_id ORDER BY COUNT(user_id) DESC LIMIT ?";
-        List<Integer> idPopularFilms = jdbc.queryForList(sql, Integer.class, count);
-        List<Film> popularFilms = new ArrayList<>();
-        for (Integer id : idPopularFilms) {
-            popularFilms.add(filmDbStorage.findById(id));
-        }
+        // Объединенный запрос для получения ID и данных фильмов
+        String sql = "SELECT f.* FROM films f JOIN films_likes fl ON f.id = fl.film_id GROUP BY fl.film_id ORDER BY COUNT(fl.user_id) DESC LIMIT ?";
+        // Получаем список популярных фильмов в одном запросе
+        List<Film> popularFilms = jdbc.query(sql, new FilmRowMapper(), count);
         return popularFilms;
     }
 
